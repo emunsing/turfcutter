@@ -1,0 +1,87 @@
+Sub SetPageLayoutForAllSheets()
+    Dim ws As Worksheet
+    Dim lastRow As Long
+    Dim colWidths As Variant
+    Dim i As Integer
+    
+    ' Column width list as specified
+    colWidths = Array(2, 10, 8.33, 18.17, 2.67, 2.67, 2.67, 2.67, 2.67, 2.67, 2.67, 2.67, 2.67, 18, 24)
+    
+    ' Loop through each worksheet in the workbook
+    For Each ws In ThisWorkbook.Worksheets
+        ' Find the last row with data in column A
+        lastRow = ws.Cells(ws.Rows.Count, "A").End(xlUp).Row
+        
+        ' Set the print area from A1 to O (last row in A)
+        ws.PageSetup.PrintArea = "$A$1:$O$" & lastRow
+        ws.PageSetup.PrintTitleRows = "$1:$1"
+        
+        ' Set margins
+        With ws.PageSetup
+            .LeftMargin = Application.InchesToPoints(0.5)
+            .TopMargin = Application.InchesToPoints(0.5)
+            .RightMargin = Application.InchesToPoints(0.5)
+            .BottomMargin = Application.InchesToPoints(0.25)
+            .FooterMargin = Application.InchesToPoints(0.25)
+            
+            ' Set footer with sheet name, current page, and total pages
+            .CenterFooter = ws.Name & " Page &P of &N"
+            
+            ' Set orientation to Landscape
+            .Orientation = xlLandscape
+        End With
+        
+        ' Set column widths
+        For i = 0 To UBound(colWidths)
+            ws.Columns(i + 1).ColumnWidth = colWidths(i)
+        Next i
+        
+        ' Set row heights from row 2 to the last row
+        ws.Rows("2:" & lastRow).RowHeight = 50
+        
+        ' Rotate cells A1:M1 to 90 degrees
+        ws.Range("E1:M1").Orientation = -90
+        
+         ' Center text top/bottom for A2:D and max rows in column A
+        ws.Range("B1:D1").VerticalAlignment = xlBottom
+        ws.Range("N1:O1").VerticalAlignment = xlBottom
+        
+        ' Apply formatting to the printable range
+        With ws.Range("A1:O" & lastRow)
+            ' Add all borders
+            .Borders(xlEdgeLeft).LineStyle = xlContinuous
+            .Borders(xlEdgeTop).LineStyle = xlContinuous
+            .Borders(xlEdgeBottom).LineStyle = xlContinuous
+            .Borders(xlEdgeRight).LineStyle = xlContinuous
+            .Borders(xlInsideVertical).LineStyle = xlContinuous
+            .Borders(xlInsideHorizontal).LineStyle = xlContinuous
+            
+            ' Wrap text for A2:D and max rows in column A
+            ws.Range("A1:D" & lastRow).WrapText = True
+            
+            ' Center text top/bottom for A2:D and max rows in column A
+            ws.Range("A2:D" & lastRow).VerticalAlignment = xlCenter
+        End With
+    Next ws
+End Sub
+
+Sub EnsureNewSheetStartsOnNewPage()
+    Dim ws As Worksheet
+    Dim totalPages As Integer
+    
+    For Each ws In ThisWorkbook.Worksheets
+        ' Set each worksheet as active to get an accurate page count
+        ws.Activate
+        
+        ' Get the total page count for the sheet
+        totalPages = ws.PageSetup.Pages.Count
+        
+        ' Check if total pages are odd
+        If totalPages Mod 2 <> 0 Then
+            ' Add a blank page by setting a print area on a blank cell after the content
+            With ws.PageSetup
+                .PrintArea = .PrintArea & ", " & ws.Cells(totalPages + 1, 1).Address
+            End With
+        End If
+    Next ws
+End Sub
